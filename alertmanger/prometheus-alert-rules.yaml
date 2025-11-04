@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-additional-alert-rules
+  namespace: monitoring
+  labels:
+    prometheus: kube-prometheus
+data:
+  drdroid-custom-rules.yaml: |
+    groups:
+    - name: drdroid_alerts
+      interval: 30s
+      rules:
+      
+      # Alert when pod CPU usage is high
+      - alert: HighPodCPU
+        expr: sum(rate(container_cpu_usage_seconds_total{namespace="default", container!=""}[5m])) by (pod) > 0.8
+        for: 2m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High CPU usage on pod {{ $labels.pod }}"
+          description: "Pod {{ $labels.pod }} CPU usage is above 80% for more than 2 minutes. Current value: {{ $value }}"
+      
+      # Alert when pod memory usage is high
+      - alert: HighPodMemory
+        expr: sum(container_memory_usage_bytes{namespace="default", container!=""}) by (pod) > 500000000
+        for: 2m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High memory usage on pod {{ $labels.pod }}"
+          description: "Pod {{ $labels.pod }} is using more than 500MB of memory. Current: {{ $value | humanize }}B"
+      
+      # Alert when pod is down/not running
+      - alert: PodNotRunning
+        expr: kube_pod_status_phase{namespace="default", phase!="Running"} == 1
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Pod {{ $labels.pod }} is not running"
+          description: "Pod {{ $labels.pod }} is in {{ $labels.phase }} phase"
+      
+      # Alert when pod restarts frequently
+      - alert: PodFrequentRestarts
+        expr: rate(kube_pod_container_status_restarts_total{namespace="default"}[15m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Pod {{ $labels.pod }} is restarting frequently"
+          description: "Pod {{ $labels.pod }} has restarted more than once in the last 15 minutes"
+      
+      # Alert when k6 traffic generator is not running
+      - alert: TrafficGeneratorDown
+        expr: kube_pod_status_phase{namespace="default", pod=~"k6-.*", phase="Running"} == 0
+        for: 2m
+        labels:
+          severity: info
+          team: platform
+        annotations:
+          summary: "k6 traffic generator is not running"
+          description: "The k6 traffic generation job is not active. Metrics may not show realistic load."

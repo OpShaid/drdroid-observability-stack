@@ -1,0 +1,55 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: HTTPChaos
+metadata:
+  name: code-exception-experiment
+  namespace: chaos-testing
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - default
+    labelSelectors:
+      app: "checkoutservice"
+  target: Request
+  port: 5050
+  method: POST
+  path: /checkout
+  abort: true
+  duration: "2m"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: code-exception-docs
+  namespace: chaos-testing
+data:
+  code-exception.md: |
+    # Code Exception Chaos Experiment
+    
+    ## Objective
+    Simulate application-level failures and errors
+    
+    ## Target
+    - Service: checkoutservice
+    - Type: HTTP request abort (500 errors)
+    - Endpoint: POST /checkout
+    - Duration: 2 minutes
+    
+    ## Expected Behavior
+    1. Checkout requests start failing
+    2. Error rate metrics spike in Grafana
+    3. Users cannot complete purchases
+    4. Error logs appear
+    5. Potential alert on high error rate
+    6. System recovers after 2 minutes
+    
+    ## How to Run
+        kubectl apply -f code-exception-chaos.yaml
+        kubectl logs -l app=checkoutservice --tail=100 -f
+        # Monitor error rate in Grafana
+        # Check for error alerts
+        kubectl delete httpchaos code-exception-experiment -n chaos-testing
+    
+    ## Success Criteria
+    - ✅ Error rate spikes during test
+    - ✅ Checkout recovers after chaos duration

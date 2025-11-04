@@ -1,0 +1,58 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: network-delay-experiment
+  namespace: chaos-testing
+spec:
+  action: delay
+  mode: one
+  selector:
+    namespaces:
+      - default
+    labelSelectors:
+      app: "frontend"
+  delay:
+    latency: "500ms"
+    correlation: "50"
+    jitter: "100ms"
+  duration: "3m"
+  direction: to
+  target:
+    mode: all
+    selector:
+      namespaces:
+        - default
+      labelSelectors:
+        app: "productcatalogservice"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: network-delay-docs
+  namespace: chaos-testing
+data:
+  network-delay.md: |
+    # Network Delay Chaos Experiment
+    
+    ## Objective
+    Test system behavior under network latency conditions
+    
+    ## Target
+    - Source: frontend
+    - Destination: productcatalogservice
+    - Type: Network delay (500ms ± 100ms)
+    - Duration: 3 minutes
+    
+    ## Expected Behavior
+    1. Frontend → Product catalog calls become slow
+    2. Response time metrics increase in Grafana
+    3. Users experience slower page loads
+    4. No errors, just latency
+    5. System continues to function
+    
+    ## How to Run
+    ```bash
+    kubectl apply -f network-delay-chaos.yaml
+    kubectl logs -l app=frontend --tail=50 -f
+    kubectl delete networkchaos network-delay-experiment -n chaos-testing
+    ```

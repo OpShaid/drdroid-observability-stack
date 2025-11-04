@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: order-generator
+  namespace: default
+spec:
+  schedule: "*/2 * * * *"  # Every 2 minutes
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: generator
+            image: curlimages/curl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              ORDER_ID="ORD-$(date +%s)"
+              USER_ID="user-$RANDOM"
+              
+              curl -X POST http://order-capture:8080/capture-order \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"order_id\": \"$ORDER_ID\",
+                  \"user_id\": \"$USER_ID\",
+                  \"email\": \"customer-$RANDOM@example.com\",
+                  \"items\": [{\"product\": \"Test Product\", \"quantity\": 1, \"price\": 99.99}],
+                  \"total_amount\": 99.99,
+                  \"currency\": \"USD\",
+                  \"shipping_address\": {\"city\": \"Test City\"},
+                  \"payment_method\": \"credit_card\"
+                }"
+              
+              echo "✅ Generated order: $ORDER_ID"
+          restartPolicy: OnFailure

@@ -1,0 +1,46 @@
+{
+  "title": "Chaos Engineering - Live Monitoring",
+  "tags": ["chaos", "experiments", "incidents"],
+  "panels": [
+    {
+      "title": "Pod Restart Count (Last Hour)",
+      "targets": [{
+        "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"default\"}[1h])) by (pod)"
+      }],
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+    },
+    {
+      "title": "CPU Usage During Chaos",
+      "targets": [{
+        "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"default\"}[5m])) by (pod)"
+      }],
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+    },
+    {
+      "title": "Active Chaos Experiments",
+      "targets": [{
+        "expr": "count(kube_pod_info{namespace=\"chaos-testing\"})"
+      }],
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 8}
+    },
+    {
+      "title": "Failed Pods",
+      "targets": [{
+        "expr": "count(kube_pod_status_phase{namespace=\"default\", phase!=\"Running\"})"
+      }],
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 8}
+    },
+    {
+      "title": "Network Latency (p95)",
+      "targets": [{
+        "expr": "histogram_quantile(0.95, sum(rate(container_network_receive_bytes_total{namespace=\"default\"}[5m])) by (le, pod))"
+      }],
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+    }
+  ]
+}

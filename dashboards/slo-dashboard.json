@@ -1,0 +1,114 @@
+{
+  "title": "DrDroid Demo - SLOs & Business KPIs",
+  "tags": ["slo", "business", "reliability"],
+  "panels": [
+    {
+      "title": "System Availability (Uptime %)",
+      "type": "stat",
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 0},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 95, "color": "yellow"},
+              {"value": 99, "color": "green"}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "(sum(up{namespace=\"default\"}) / count(up{namespace=\"default\"})) * 100",
+          "legendFormat": "Uptime"
+        }
+      ]
+    },
+    {
+      "title": "Error Budget (Last 30min)",
+      "type": "stat",
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 0},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 5, "color": "yellow"},
+              {"value": 100, "color": "green"}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "100 - ((sum(rate(http_requests_total{namespace=\"default\"}[30m])) / count(http_requests_total{namespace=\"default\"})) * 100)",
+          "legendFormat": "Error Budget"
+        }
+      ]
+    },
+    {
+      "title": "Service Health Score",
+      "type": "gauge",
+      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 0},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 70, "color": "yellow"},
+              {"value": 100, "color": "green"}
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "count(kube_pod_status_phase{namespace=\"default\", phase=\"Running\"}) / count(kube_pod_status_phase{namespace=\"default\"}) * 100",
+          "legendFormat": "Running Pods"
+        }
+      ]
+    },
+    {
+      "title": "Top 5 Erroring Services (30min)",
+      "type": "table",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 6},
+      "targets": [
+        {
+          "expr": "topk(5, rate(http_requests_total{status=~\"5..\"}[30m]))",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "green"},
+              {"value": 5, "color": "yellow"},
+              {"value": 10, "color": "red"}
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "schemaVersion": 36,
+  "version": 1
+}

@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: jaeger-trace-generator
+  namespace: observability
+spec:
+  template:
+    spec:
+      containers:
+      - name: trace-gen
+        image: jaegertracing/jaeger-client-go:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Generating sample traces to Jaeger..."
+          # This will generate some basic trace data
+          while true; do
+            curl -X POST http://jaeger-collector:14268/api/traces \
+              -H "Content-Type: application/json" \
+              -d '{
+                "data": [{
+                  "traceID": "trace-'$(date +%s)'",
+                  "spans": [{
+                    "traceID": "trace-'$(date +%s)'",
+                    "spanID": "span-1",
+                    "operationName": "frontend-request",
+                    "startTime": '$(date +%s%N | cut -b1-16)',
+                    "duration": 150000,
+                    "tags": [
+                      {"key": "service", "type": "string", "value": "frontend"},
+                      {"key": "http.method", "type": "string", "value": "GET"}
+                    ]
+                  }]
+                }]
+              }'
+            sleep 10
+          done
+      restartPolicy: Never
+  backoffLimit: 0

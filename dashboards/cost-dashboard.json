@@ -1,0 +1,60 @@
+{
+  "title": "DrDroid Demo - Resource Cost Analysis",
+  "tags": ["cost", "efficiency", "optimization", "demo"],
+  "panels": [
+    {
+      "title": "CPU Waste (Allocated vs Used %)",
+      "type": "gauge",
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 0},
+      "targets": [{
+        "expr": "100 * (sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=\"default\"}) - sum(rate(container_cpu_usage_seconds_total{namespace=\"default\"}[5m]))) / sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=\"default\"})"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "percent"}
+      }
+    },
+    {
+      "title": "Memory Waste (Allocated vs Used %)",
+      "type": "gauge",
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 0},
+      "targets": [{
+        "expr": "100 * (sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=\"default\"}) - sum(container_memory_usage_bytes{namespace=\"default\"})) / sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=\"default\"})"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "percent"}
+      }
+    },
+    {
+      "title": "Most Expensive Pods (Memory + CPU)",
+      "type": "table",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 6},
+      "targets": [
+        {
+          "expr": "topk(5, sum(container_memory_usage_bytes{namespace=\"default\"}) by (pod))",
+          "legendFormat": "Memory {{pod}}"
+        },
+        {
+          "expr": "topk(5, sum(rate(container_cpu_usage_seconds_total{namespace=\"default\"}[5m])) by (pod))",
+          "legendFormat": "CPU {{pod}}"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "columns": [
+          {"text": "Pod", "type": "string"},
+          {"text": "Memory Usage (Bytes)", "type": "number"},
+          {"text": "CPU Usage (cores)", "type": "number"}
+        ]
+      }
+    },
+    {
+      "title": "Resource Efficiency Score",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 16},
+      "targets": [{
+        "expr": "100 * sum(rate(container_cpu_usage_seconds_total{namespace=\"default\"}[5m])) / sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=\"default\"})"
+      }],
+      "fieldConfig": {"defaults": {"unit": "percent"}}
+    }
+  ]
+}

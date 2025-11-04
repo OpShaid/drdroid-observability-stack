@@ -1,0 +1,57 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: pod-kill-every-5m
+  namespace: chaos-testing
+spec:
+  schedule: "@every 5m"
+  historyLimit: 5
+  concurrencyPolicy: Forbid
+  type: PodChaos
+  podChaos:
+    action: pod-kill
+    mode: one
+    selector:
+      namespaces:
+        - default
+      labelSelectors:
+        app: "cartservice"
+    duration: "10s"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pod-kill-docs
+  namespace: chaos-testing
+data:
+  pod-kill.md: |
+    # Pod Kill Chaos Experiment
+    
+    ## Objective
+    Test Kubernetes self-healing and alerting when pods crash
+    
+    ## Target
+    - Service: cartservice
+    - Type: Pod termination
+    - Schedule: Every 5 minutes
+    - Duration: Instant kill
+    
+    ## Expected Behavior
+    1. Pod gets killed immediately
+    2. Kubernetes restarts the pod automatically
+    3. PodNotRunning alert fires briefly
+    4. Pod restart counter increases
+    5. PodFrequentRestarts alert may fire
+    6. Slack notifications for both events
+    
+    ## How to Run
+    ```bash
+    kubectl apply -f pod-failure-chaos.yaml
+    kubectl get pods -l app=cartservice -w
+    kubectl get pods -l app=cartservice -o wide
+    kubectl delete schedule pod-kill-every-5m -n chaos-testing
+    ```
+    
+    ## Success Criteria
+    - ✅ Pod restarts successfully
+    - ✅ Restart alerts fire

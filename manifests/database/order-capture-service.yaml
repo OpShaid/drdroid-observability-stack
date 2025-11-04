@@ -1,0 +1,148 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-capture-config
+  namespace: default
+data:
+  app.py: |
+    from flask import Flask, request, jsonify
+    import psycopg2
+    import json
+    import uuid
+    import os
+
+    app = Flask(__name__)
+
+    # Database connection
+    def get_db_connection():
+        return psycopg2.connect(
+            host=os.getenv('DB_HOST', 'postgres'),
+            database=os.getenv('DB_NAME', 'orders'),
+            user=os.getenv('DB_USER', 'orderuser'),
+            password=os.getenv('DB_PASSWORD', 'orderpass123')
+        )
+
+    @app.route('/health', methods=['GET'])
+    def health():
+        return jsonify({"status": "healthy"}), 200
+
+    @app.route('/capture-order', methods=['POST'])
+    def capture_order():
+        try:
+            data = request.get_json()
+            order_id = data.get('order_id', str(uuid.uuid4()))
+            user_id = data.get('user_id', 'anonymous')
+            email = data.get('email', '')
+            items = json.dumps(data.get('items', []))
+            total_amount = data.get('total_amount', 0.0)
+            currency = data.get('currency', 'USD')
+            shipping_address = json.dumps(data.get('shipping_address', {}))
+            payment_method = data.get('payment_method', 'unknown')
+
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO orders 
+                (order_id, user_id, email, items, total_amount, currency, shipping_address, payment_method, order_status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (order_id) DO UPDATE SET
+                    updated_at = CURRENT_TIMESTAMP,
+                    order_status = EXCLUDED.order_status
+            """, (order_id, user_id, email, items, total_amount, currency, shipping_address, payment_method, 'completed'))
+            conn.commit()
+            cur.close()
+            conn.close()
+            return jsonify({"status": "success", "order_id": order_id, "message": "Order captured successfully"}), 201
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)}), 500
+
+    @app.route('/orders', methods=['GET'])
+    def get_orders():
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            limit = int(request.args.get('limit', 10))
+            cur.execute("SELECT * FROM orders ORDER BY created_at DESC LIMIT %s", (limit,))
+            columns = [desc[0] for desc in cur.description]
+            orders = [dict(zip(columns, row)) for row in cur.fetchall()]
+            cur.close()
+            conn.close()
+            return jsonify({"status": "success", "count": len(orders), "orders": orders}), 200
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)}), 500
+
+    @app.route('/analytics', methods=['GET'])
+    def get_analytics():
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM order_analytics ORDER BY order_date DESC")
+            columns = [desc[0] for desc in cur.description]
+            analytics = [dict(zip(columns, row)) for row in cur.fetchall()]
+            cur.close()
+            conn.close()
+            return jsonify({"status": "success", "analytics": analytics}), 200
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)}), 500
+
+    if __name__ == '__main__':
+        app.run(host='0.0.0.0', port=8080)
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-capture
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: order-capture
+  template:
+    metadata:
+      labels:
+        app: order-capture
+    spec:
+      containers:
+      - name: order-capture
+        image: python:3.11-slim
+        workingDir: /app
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DB_HOST
+          value: "postgres"
+        - name: DB_NAME
+          value: "orders"
+        - name: DB_USER
+          value: "orderuser"
+        - name: DB_PASSWORD
+          value: "orderpass123"
+        command:
+        - /bin/sh
+        - -c
+        - |
+          apt-get update && apt-get install -y gcc libpq-dev
+          pip install --no-cache-dir flask psycopg2-binary gunicorn
+          gunicorn --bind 0.0.0.0:8080 --workers 2 app:app
+        volumeMounts:
+        - name: config
+          mountPath: /app
+      volumes:
+      - name: config
+        configMap:
+          name: order-capture-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-capture
+  namespace: default
+spec:
+  selector:
+    app: order-capture
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP
