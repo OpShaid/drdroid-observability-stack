@@ -450,67 +450,10 @@ curl -X POST -H 'Content-type: application/json' \
 
 ---
 
-## 📚 Documentation Structure
-```
-.
-├── README.md                          # This file
-├── manifests/
-│   ├── alerting/
-│   │   ├── alertmanager-config.yaml
-│   │   └── prometheus-rules-patch.yaml
-│   ├── chaos/
-│   │   ├── cpu-stress-chaos.yaml
-│   │   ├── pod-kill-chaos.yaml
-│   │   ├── network-chaos.yaml
-│   │   └── http-chaos.yaml
-│   ├── database/
-│   │   └── postgres.yaml
-│   └── tracing/
-│       └── jaeger-all-in-one.yaml
-├── scripts/
-│   ├── setup.sh                       # Initial setup
-│   └── s.sh                           # Start everything
-└── screenshots/                       # Demo screenshots
-    ├── grafana-dashboard.png
-    ├── prometheus-alerts.png
-    └── slack-notification.png
-```
 
----
 
-## 🎓 Key Learnings
 
-### Technical Insights
-1. **Observability is not just monitoring** - Requires logs, metrics, traces, and context
-2. **Alert fatigue is real** - Proper thresholds and routing are critical
-3. **Chaos engineering catches issues** before customers do
-4. **Database integration** adds stateful complexity but enables better analysis
-5. **Multi-channel alerting** ensures the right people get notified at the right time
 
-### Best Practices Demonstrated
-- Infrastructure as Code (IaC) with Kubernetes manifests
-- Declarative configuration management
-- Separation of concerns (monitoring, application, data layers)
-- Comprehensive documentation
-- Automated testing through chaos engineering
-
----
-
-## 🤝 About This Project
-
-**Built for:** DrDroid Platform Engineer Assignment  
-**Timeline:** [Your timeline]  
-**Technologies:** Kubernetes, Prometheus, Grafana, Loki, Jaeger, Chaos Mesh, PostgreSQL, Python
-
-**Contact:**
-- GitHub: [@OpShaid](https://github.com/OpShaid)
-- Email: [Your email]
-
----
-
-## 📄 License
-
-This project is for demonstration purposes as part of a technical assignment.
 
 ---
 
