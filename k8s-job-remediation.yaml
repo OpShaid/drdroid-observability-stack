@@ -1,0 +1,17 @@
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: auto-remediate-high-cpu
+spec:
+  template:
+    spec:
+      containers:
+      - name: remediate
+        image: bitnami/kubectl
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          kubectl scale deployment frontend --replicas=5
+          echo "Scaled frontend to 5 replicas due to high CPU"
+      restartPolicy: OnFailure
