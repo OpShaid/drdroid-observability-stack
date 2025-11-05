@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: drdroid
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: drd-agent-credentials
+  namespace: drdroid
+type: Opaque
+stringData:
+  proxy_token: "5b1bb69900795b6682830d279e69c656cbd19d42"
+  cluster_name: "k3d-drdroid-demo"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: drd-agent
+  namespace: drdroid
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: drd-agent
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "nodes", "namespaces", "events", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: drd-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: drd-agent
+subjects:
+- kind: ServiceAccount
+  name: drd-agent
+  namespace: drdroid
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drd-agent
+  namespace: drdroid
+  labels:
+    app: drd-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drd-agent
+  template:
+    metadata:
+      labels:
+        app: drd-agent
+    spec:
+      serviceAccountName: drd-agent
+      containers:
+      - name: agent
+        image: drdroidlab/drd-agent:latest
+        imagePullPolicy: Always
+        env:
+        - name: PROXY_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: drd-agent-credentials
+              key: proxy_token
+        - name: CLUSTER_NAME
+          valueFrom:
+            secretKeyRef:
+              name: drd-agent-credentials
+              key: cluster_name
+        - name: PLATFORM_URL
+          value: "https://aiops.drdroid.io"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"

@@ -1,0 +1,167 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: drdroid
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: monitoring-script
+  namespace: drdroid
+data:
+  monitor.sh: |
+    #!/bin/sh
+    echo "🤖 DrDroid Monitoring Agent Started"
+    echo "Cluster: ${CLUSTER_NAME}"
+    echo "Proxy Token: ${PROXY_TOKEN:0:20}..."
+    echo ""
+
+    METRICS_FILE=/metrics/metrics.prom
+    mkdir -p /metrics
+
+    while true; do
+      echo "📊 Collecting cluster metrics..."
+
+      # Total pods
+      PODS=$(kubectl get pods --all-namespaces --no-headers 2>/dev/null | wc -l)
+
+      # Total nodes
+      NODES=$(kubectl get nodes --no-headers 2>/dev/null | wc -l)
+
+      # Unhealthy pods
+      UNHEALTHY=$(kubectl get pods --all-namespaces --field-selector=status.phase!=Running --no-headers 2>/dev/null | wc -l)
+
+      # Recent warnings
+      WARNINGS=$(kubectl get events --all-namespaces --field-selector type=Warning --no-headers 2>/dev/null | wc -l)
+
+      # Metrics per namespace
+      echo "# HELP namespace_unhealthy_pods Number of unhealthy pods per namespace" > $METRICS_FILE
+      echo "# TYPE namespace_unhealthy_pods gauge" >> $METRICS_FILE
+      for ns in $(kubectl get ns --no-headers -o custom-columns=:metadata.name); do
+        UNHEALTHY_NS=$(kubectl get pods -n $ns --field-selector=status.phase!=Running --no-headers 2>/dev/null | wc -l)
+        echo "namespace_unhealthy_pods{namespace=\"$ns\"} $UNHEALTHY_NS" >> $METRICS_FILE
+      done
+
+      # Global metrics
+      echo "# HELP cluster_total_pods Total pods in cluster" >> $METRICS_FILE
+      echo "cluster_total_pods $PODS" >> $METRICS_FILE
+      echo "# HELP cluster_total_nodes Total nodes in cluster" >> $METRICS_FILE
+      echo "cluster_total_nodes $NODES" >> $METRICS_FILE
+      echo "# HELP cluster_unhealthy_pods Total unhealthy pods" >> $METRICS_FILE
+      echo "cluster_unhealthy_pods $UNHEALTHY" >> $METRICS_FILE
+      echo "# HELP cluster_warning_events Number of warning events" >> $METRICS_FILE
+      echo "cluster_warning_events $WARNINGS" >> $METRICS_FILE
+
+      echo "---"
+      echo "💚 Agent healthy - metrics updated"
+      sleep 30
+    done
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: drd-credentials
+  namespace: drdroid
+type: Opaque
+stringData:
+  proxy_token: "YOUR_PROXY_TOKEN_HERE"
+  cluster_name: "k3d-drdroid-demo"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: drd-monitor
+  namespace: drdroid
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: drd-monitor
+rules:
+- apiGroups: [""]
+  resources: ["pods", "nodes", "events", "namespaces"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: drd-monitor
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: drd-monitor
+subjects:
+- kind: ServiceAccount
+  name: drd-monitor
+  namespace: drdroid
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drdroid-monitoring-agent
+  namespace: drdroid
+  labels:
+    app: drdroid-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drdroid-agent
+  template:
+    metadata:
+      labels:
+        app: drdroid-agent
+    spec:
+      serviceAccountName: drd-monitor
+      containers:
+      - name: monitor
+        image: bitnami/kubectl:latest
+        command: ["/bin/sh", "/scripts/monitor.sh"]
+        env:
+        - name: PROXY_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: drd-credentials
+              key: proxy_token
+        - name: CLUSTER_NAME
+          valueFrom:
+            secretKeyRef:
+              name: drd-credentials
+              key: cluster_name
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+        - name: metrics
+          mountPath: /metrics
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: scripts
+        configMap:
+          name: monitoring-script
+          defaultMode: 0755
+      - name: metrics
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drdroid-monitoring-agent
+  namespace: drdroid
+spec:
+  selector:
+    app: drdroid-agent
+  ports:
+  - port: 9100
+    targetPort: 9100

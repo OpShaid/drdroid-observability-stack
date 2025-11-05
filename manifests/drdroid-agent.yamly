@@ -1,0 +1,163 @@
+## this file has a template in which you should store credentials in your dev environment
+
+## you should create a copy of this file with the name secrets.yaml
+
+## All keys will be written with sample values in it
+
+
+# cloudwatch format
+# (aws_access_key and aws_secret_key) or (aws_assumed_role_arn) should be provided
+connector_name_1:
+  type: "CLOUDWATCH" # fixed -- DO NOT MODIFY
+  region: sample_region # str, required
+  aws_access_key: sample_access_key # str, optional
+  aws_secret_key: sample_secret_key # str, optional
+  aws_assumed_role_arn: sample_role_arn # str, optional
+
+# eks format
+# (aws_access_key and aws_secret_key) or (aws_assumed_role_arn) should be provided
+connector_name_2:
+  type: "EKS" # fixed -- DO NOT MODIFY
+  region: sample_region # str, required
+  k8_role_arn: sample_k8_role_arn # str, required
+  aws_access_key: sample_access_key # str, optional
+  aws_secret_key: sample_secret_key # str, optional
+  aws_assumed_role_arn: sample_role_arn # str, optional
+
+# grafana format
+connector_name_3:
+  type: "GRAFANA" # fixed -- DO NOT MODIFY
+  grafana_host: sample_host # str, required
+  grafana_api_key: sample_grafana_api_key # str, required
+  ssl_verify: false # str, optional (true or false)
+
+# grafana loki format
+connector_name_4:
+  type: "GRAFANA_LOKI" # fixed -- DO NOT MODIFY
+  protocol: https # str, required (http or https)
+  host: sample_host # str, required
+  port: sample_port # int, required
+  x_scope_org_id: anonymous # str, optional (default: anonymous)
+  ssl_verify: false # str, optional (true or false)
+
+
+# sql connection format
+connector_name_5:
+  type: "SQL_DATABASE_CONNECTION" # fixed -- DO NOT MODIFY
+  connection_string: sample_valid_connection_string # str, required
+
+
+# mongodb format
+connector_name_6:
+  type: "MONGODB" # fixed -- DO NOT MODIFY
+  connection_string: sample_valid_connection_string # str, required
+
+# opensearch format
+connector_name_7:
+  type: "OPEN_SEARCH" # fixed -- DO NOT MODIFY
+  protocol: sample_protocol # str, required
+  host: sample_host # str, required
+  username: sample_username # str, required
+  password: sample_password # str, required
+  port: sample_port # int, optional (default empty)
+  ssl_verify: false # str, optional (default False)
+
+# github format
+connector_name_8:
+  type: "GITHUB" # fixed -- DO NOT MODIFY
+  token: sample_token # str, required
+  org: sample_org # str, required
+
+# postgres format
+connector_name_9:
+  type: "POSTGRES" # fixed -- DO NOT MODIFY
+  host: sample_host # str, required
+  user: sample_user # str, required
+  password: sample_password # str, required
+  port: sample_port # int, required
+  database: sample_database # str, required
+
+# kubernetes format (for k8s cluster) type 1
+connector_name_10:
+  type: "KUBERNETES"
+  cluster_name: 'k3d-drdroid-demo'
+  cluster_api_server: 'https://0.0.0.0:6443'
+  cluster_token: '5b1bb69900795b6682830d279e69c656cbd19d42'
+
+# Bash format for remote server with pem
+connector_name_11:
+  type: "BASH" # fixed -- DO NOT MODIFY
+  remote_user: user # str, required
+  remote_host: host_ip # str, required
+  remote_pem: stringified_pem # str, required
+
+connector_name_12:
+  type: "ARGOCD" # fixed -- DO NOT MODIFY
+  argocd_server: api_server_url # str, required
+  argocd_token: api_token # str, required
+
+connector_name_13:
+  type: "JIRA_CLOUD" # fixed -- DO NOT MODIFY
+  jira_domain: jira_domain # str, required
+  jira_cloud_api_key: jira_cloud_api_key # str, required
+  jira_email: jira_email # str, required
+
+connector_name_14:
+  type: "JENKINS" # fixed -- DO NOT MODIFY
+  url: jenkins_domain # str, required
+  username: jenkins_username # str, required
+  api_token: jenkins_api_token # str, required
+  crumb: "false" # str, optional (default False)
+
+connector_name_15:
+  type: "ELASTIC_SEARCH" # fixed -- DO NOT MODIFY
+  protocol: "https" # str, required (http or https)
+  host: sample_host # str, required (host string)
+  kibana_host: sample_host # str, required (host string)
+  api_key_id: "sample_api_key_id" # str, required
+  api_key: "sample_api_key" # str, required
+  port: 443 # int, optional
+  verify_certs: "False" # str, optional (default False)
+
+connector_name_16:
+  type: "NEW_RELIC" # fixed -- DO NOT MODIFY
+  api_key: sample_api_key # str, required
+  app_id: sample_application_id # str, required
+  api_domain: sample_api_domain # str, required
+
+connector_name_17:
+  type: "POSTHOG" # fixed -- DO NOT MODIFY
+  api_key: sample_api_key # str, required
+  app_host: sample_app_host # str, required
+  project_id: sample_project_id # str, required
+
+connector_name_18:
+  type: "SENTRY" # fixed -- DO NOT MODIFY
+  api_key: sample_api_key # str, required
+  org: sample_org # str, required
+  project: sample_project # str, required
+
+
+connector_name_19:
+  type: "AZURE" # fixed -- DO NOT MODIFY
+  client_id: sample_client_id # str, required
+  client_secret: sample_client_secret # str, required
+  tenant_id: sample_tenant_id # str, required
+  subscription_id: sample_subscription_id # str, required
+
+
+connector_name_20:
+  type: "GITHUB_ACTIONS" # fixed -- DO NOT MODIFY
+  token: sample_token # str, required
+
+
+connector_name_21:
+  type: "DATADOG" # fixed -- DO NOT MODIFY
+  dd_api_key: sample_api_key # str, required
+  dd_app_key: sample_app_key # str, required
+  dd_api_domain: sample_api_domain # str, required
+
+connector_name_22:
+  type: "GKE" # fixed -- DO NOT MODIFY
+  project_id: sample_project_id # str, required
+  service_account_json: sample_service_account_json # str, required

@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-templates
+  namespace: monitoring
+data:
+  slack.tmpl: |
+    {{ define "slack.title" }}
+    {{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }} {{ .GroupLabels.alertname }}
+    {{ end }}
+    
+    {{ define "slack.text" }}
+    {{ if eq .Status "firing" }}
+    *Status:* 🔴 FIRING
+    {{ else }}
+    *Status:* ✅ RESOLVED
+    {{ end }}
+    
+    *Alert Details:*
+    {{ range .Alerts }}
+    • *Summary:* {{ .Annotations.summary }}
+    • *Pod:* `{{ .Labels.pod }}`
+    • *Namespace:* `{{ .Labels.namespace }}`
+    • *Severity:* {{ .Labels.severity }}
+    {{ if .Annotations.description }}
+    • *Description:* {{ .Annotations.description }}
+    {{ end }}
+    {{ end }}
+    
+    *Runbook:* Check Grafana → Business Metrics Dashboard
+    *Time:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+    {{ end }}

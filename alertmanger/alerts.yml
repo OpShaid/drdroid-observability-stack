@@ -1,0 +1,91 @@
+groups:
+  - name: service_alerts
+    interval: 10s
+    rules:
+      # Critical Alerts
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Service {{ $labels.instance }} is down"
+          description: "{{ $labels.job }} has been down for more than 1 minute"
+          
+      - alert: HighErrorRate
+        expr: |
+          rate(http_requests_total{status=~"5.."}[5m]) / 
+          rate(http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "High error rate on {{ $labels.service }}"
+          description: "Error rate is {{ $value | humanizePercentage }} over last 5 minutes"
+          
+      - alert: DatabaseConnectionPoolExhausted
+        expr: database_connection_pool_usage > 0.9
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Connection pool at {{ $value | humanizePercentage }} capacity"
+
+      # Warning Alerts  
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.99, 
+            rate(http_request_duration_seconds_bucket[5m])
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High latency detected on {{ $labels.service }}"
+          description: "P99 latency is {{ $value }}s over last 5 minutes"
+          
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+          
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value }}%"
+
+      # Business Metric Alerts
+      - alert: RevenueDropped
+        expr: rate(revenue_total[5m]) < 100
+        for: 10m
+        labels:
+          severity: warning
+          team: business
+        annotations:
+          summary: "Revenue rate has dropped significantly"
+          description: "Revenue is only ${{ $value }}/min (expected >$100/min)"
+          
+      - alert: LowUserSignups
+        expr: rate(user_signups_total[1h]) < 10
+        for: 30m
+        labels:
+          severity: info
+          team: growth
+        annotations:
+          summary: "User signup rate is low"
+          description: "Only {{ $value }} signups/hour in last 30 minutes"
