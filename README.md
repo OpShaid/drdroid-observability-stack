@@ -40,7 +40,7 @@ This project demonstrates a comprehensive observability stack integrating:
 │              k3d Cluster (3 nodes)                      │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
-│  Microservices Layer (11 services)                     │
+│  Microservices Layer                                    │
 │  ├─ frontend                                           │
 │  ├─ cartservice                                        │
 │  ├─ checkoutservice                                    │
